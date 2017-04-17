@@ -1,145 +1,113 @@
-package com.app.todo.ui;
+package com.example.laxmi9946.todonotes.ui;
 
-import android.content.Context;
+import android.app.ProgressDialog;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import android.support.annotation.NonNull;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.AppCompatTextView;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Toast;
 
-import com.app.todo.R;
-import com.app.todo.baseclass.BaseActivity;
-import com.app.todo.utils.Constants;
+import com.example.laxmi9946.todonotes.R;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-
-public class LoginActivity extends BaseActivity implements View.OnClickListener {
-    Pattern pattern, pattern2;
-    Matcher matcher, matcher2;
-    SharedPreferences sharedPreferences;
-    AppCompatEditText editTextEmail, editTextPassword;
-    AppCompatButton loginButton, fbButton, googleButton;
-    AppCompatTextView createAccountTextview, forgotTextview;
-
+/**
+ * Created by laxmi9946 on 4/15/2017.
+ */
+public class LoginActivity extends AppCompatActivity implements View.OnClickListener {
+    AppCompatEditText loginemail_Edittext,loginpassword_EditText;
+    AppCompatButton login_btn;
+    FirebaseAuth firebaseAuth;
+    ProgressDialog progressDialog;
+    AppCompatTextView register,forgotpassword;
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
-        initView();
+        /*if (firebaseAuth.getCurrentUser() != null) {
+            startActivity(new Intent(LoginActivity.this, TodoNotesActivity.class));
+            finish();
+        }*/
+        setContentView(R.layout.login_activity);
+        firebaseAuth=FirebaseAuth.getInstance();
+        if (firebaseAuth.getCurrentUser() != null) {
+            startActivity(new Intent(LoginActivity.this, TodoNotesActivity.class));
+            finish();
+        }
+        loginemail_Edittext= (AppCompatEditText) findViewById(R.id.email_editText);
+        loginpassword_EditText= (AppCompatEditText) findViewById(R.id.password_editText);
+        register= (AppCompatTextView) findViewById(R.id.register_textView);
+        forgotpassword= (AppCompatTextView) findViewById(R.id.forgot_textView);
+        login_btn= (AppCompatButton) findViewById(R.id.login_button);
+        progressDialog=new ProgressDialog(this);
+        login_btn.setOnClickListener(this);
+        register.setOnClickListener(this);
+        forgotpassword.setOnClickListener(this);
 
     }
 
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-    }
 
-    @Override
-    public void initView() {
+    private void userLogin() {
+        String email = loginemail_Edittext.getText().toString().trim();
+        String password  = loginpassword_EditText.getText().toString().trim();
 
-        editTextEmail = (AppCompatEditText) findViewById(R.id.email_Edittext);
-        editTextPassword = (AppCompatEditText) findViewById(R.id.password_Edittext);
-        createAccountTextview = (AppCompatTextView) findViewById(R.id.createAccount_Textview);
-        forgotTextview = (AppCompatTextView) findViewById(R.id.forgot_textview);
-        loginButton = (AppCompatButton) findViewById(R.id.login_button);
-        fbButton = (AppCompatButton) findViewById(R.id.fb_button);
-        googleButton = (AppCompatButton) findViewById(R.id.google_button);
+        //checking if email and passwords are empty
+        if(TextUtils.isEmpty(email)){
+            Toast.makeText(this, "Please enter email", Toast.LENGTH_LONG).show();
+            return;
+        }
 
-        setClicklistener();
-    }
+        if(TextUtils.isEmpty(password)){
+            Toast.makeText(this,"Please enter password",Toast.LENGTH_LONG).show();
+            return;
+        }
 
-    @Override
-    public void setClicklistener() {
-        forgotTextview.setOnClickListener(this);
-        createAccountTextview.setOnClickListener(this);
-        loginButton.setOnClickListener(this);
-        fbButton.setOnClickListener(this);
-        googleButton.setOnClickListener(this);
+        //if the email and password are not empty
+        //displaying a progress dialog
+
+        progressDialog.setMessage("Logging into app Please Wait...");
+        progressDialog.show();
+
+        //creating a new user
+        firebaseAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        //checking if success
+                        if (task.isSuccessful()) {
+                            //display some message here
+
+                            startActivity(new Intent(getApplicationContext(), TodoNotesActivity.class));
+                            finish();
+                        } else {
+                            //display some message here
+                            Toast.makeText(getApplicationContext(), "Login Error", Toast.LENGTH_LONG).show();
+                        }
+                        progressDialog.dismiss();
+                    }
+                });
     }
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.createAccount_Textview:
-
-                Intent intent = new Intent(this, RegistrationActivity.class);
-                startActivity(intent);
-                break;
-
-            case R.id.forgot_textview:
-
-                Toast.makeText(this, getString(R.string.logic), Toast.LENGTH_SHORT).show();
-                break;
-
+        switch(v.getId()){
             case R.id.login_button:
-                sharedPreferences = getSharedPreferences(Constants.keys, Context.MODE_PRIVATE);
-                validate();
+                userLogin();
                 break;
-            case R.id.fb_button:
-
-                Toast.makeText(this, getString(R.string.logic), Toast.LENGTH_SHORT).show();
+            case R.id.register_textView:
+                startActivity(new Intent(getApplicationContext(),RegisterActivity.class));
+                finish();
                 break;
+            case R.id.forgot_textView:
+                startActivity(new Intent(this, ResetPasswordActivity.class));
 
-            case R.id.google_button:
-                Toast.makeText(this, getString(R.string.logic), Toast.LENGTH_SHORT).show();
                 break;
-        }
-
-    }
-
-    private void validate() {
-
-        String email = sharedPreferences.getString("email", Constants.values);
-        String password = sharedPreferences.getString("password", Constants.values);
-        pattern = Pattern.compile(Constants.EMAIL_PATTERN);
-        matcher = pattern.matcher(editTextEmail.getText().toString());
-
-        pattern2 = Pattern.compile(Constants.Password_Pattern);
-        matcher2 = pattern2.matcher(editTextPassword.getText().toString());
-
-        if (editTextEmail.getText().toString().length() == 0) {
-            editTextEmail.setError(getString(R.string.email_field_condition));
-            editTextEmail.requestFocus();
-            //editTextPassword.setError("Valid pswrd");
-        } else if (matcher.matches()) {
-
-        } else {
-            editTextEmail.setError(getString(R.string.invalid_mail));
-            editTextEmail.requestFocus();
-        }
-
-        if (editTextPassword.getText().toString().length() == 0) {
-            editTextPassword.setError(getString(R.string.password_field_condition));
-            editTextPassword.requestFocus();
-        } else if (matcher2.matches()) {
-
-
-        } else {
-            editTextPassword.setError(getString(R.string.invalid_password));
-            editTextPassword.requestFocus();
-        }
-
-        if (editTextEmail.getText().toString().equalsIgnoreCase(email) && editTextPassword.getText().toString().equals(password + "")) {
-            SharedPreferences.Editor shEditor = sharedPreferences.edit();
-            shEditor.putString("login", "true");
-
-            shEditor.commit();
-            // Log.i("mn", "onClick: ");
-            Toast.makeText(getApplicationContext(), getString(R.string.login_success), Toast.LENGTH_SHORT).show();
-            Intent intent1 = new Intent(this, TodoNotesActivity.class);
-            startActivity(intent1);
-            finish();
-        } else {
-            Toast.makeText(getApplicationContext(), getString(R.string.enter_correct_details), Toast.LENGTH_SHORT).show();
-
         }
     }
-
 }
-
